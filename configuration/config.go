@@ -22,11 +22,13 @@ var (
 type Config struct {
     Debug       bool            `yaml:"debug"`
     Indexes     IndexesStruct   `yaml:"indexes"`
+    Redis       RedisStruct     `yaml:"redis"`
 }
 
 // SetDefaults set the defaults values of all keys has not configured
 func (cfg *Config) SetDefaults() *Config {
     cfg.Indexes.SetDefaults()
+    cfg.Redis.SetDefaults()
     return cfg
 }
 
@@ -36,6 +38,10 @@ func CreateConfFile() {
         Debug: false,
         Indexes: IndexesStruct{
             User: "users",
+        },
+        Redis: RedisStruct{
+            Host: "localhost",
+            Port: 6379,
         },
     }
     b, err := yaml.Marshal(c)
