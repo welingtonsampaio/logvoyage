@@ -4,6 +4,7 @@ import (
 	"github.com/codegangsta/cli"
 	"log"
 
+	config "github.com/firstrow/logvoyage/configuration"
 	"github.com/firstrow/logvoyage/backend"
 	"github.com/firstrow/logvoyage/common"
 	"github.com/firstrow/logvoyage/web"
@@ -14,7 +15,12 @@ var CreateUsersIndex = cli.Command{
 	Usage:       "Will create `user` index in ES",
 	Description: "",
 	Action:      createUsersIndexFunc,
-	Flags:       []cli.Flag{},
+	Flags:       []cli.Flag{
+		cli.StringFlag{
+			Name:  "config",
+			Usage: "Use different config file. Default is /etc/logvoyage.yml",
+		},
+	},
 }
 
 var DeleteIndex = cli.Command{
@@ -22,7 +28,12 @@ var DeleteIndex = cli.Command{
 	Usage:       "Will delete elastic search index",
 	Description: "",
 	Action:      deleteIndexFunc,
-	Flags:       []cli.Flag{},
+	Flags:       []cli.Flag{
+		cli.StringFlag{
+			Name:  "config",
+			Usage: "Use different config file. Default is /etc/logvoyage.yml",
+		},
+	},
 }
 
 var CreateIndex = cli.Command{
@@ -30,7 +41,12 @@ var CreateIndex = cli.Command{
 	Usage:       "Create search index",
 	Description: "",
 	Action:      createIndexFunc,
-	Flags:       []cli.Flag{},
+	Flags:       []cli.Flag{
+		cli.StringFlag{
+			Name:  "config",
+			Usage: "Use different config file. Default is /etc/logvoyage.yml",
+		},
+	},
 }
 
 var StartBackendServer = cli.Command{
@@ -38,6 +54,10 @@ var StartBackendServer = cli.Command{
 	Usage:  "Starts TCP server to accept logs from clients",
 	Action: startBackendServer,
 	Flags: []cli.Flag{
+		cli.StringFlag{
+			Name:  "config",
+			Usage: "Use different config file. Default is /etc/logvoyage.yml",
+		},
 		cli.StringFlag{
 			Name:  "tcp-dsn",
 			Usage: "Use different TCP host and port. Default is :27077",
@@ -56,6 +76,10 @@ var StartWebServer = cli.Command{
 	Action:      startWebServer,
 	Flags: []cli.Flag{
 		cli.StringFlag{
+			Name:  "config",
+			Usage: "Use different config file. Default is /etc/logvoyage.yml",
+		},
+		cli.StringFlag{
 			Name:  "webui-dsn",
 			Usage: "Use different host and port for webio. Default is :3000",
 		},
@@ -68,6 +92,10 @@ var StartAll = cli.Command{
 	Description: "",
 	Action:      startAll,
 	Flags: []cli.Flag{
+		cli.StringFlag{
+			Name:  "config",
+			Usage: "Use different config file. Default is /etc/logvoyage.yml",
+		},
 		cli.StringFlag{
 			Name:  "tcp-dsn",
 			Usage: "Use different TCP host and port. Default is :27077",
@@ -83,20 +111,33 @@ var StartAll = cli.Command{
 	},
 }
 
+func loadConfig(s string) *config.Config {
+	if len(s) > 0 {
+		config.ReadConf(s)
+	}else{
+		config.ReadConf()
+	}
+	return &config.Cfg
+}
+
 func startBackendServer(c *cli.Context) {
+	loadConfig(c.String("config"))
 	backend.Start(c.String("tcp-dsn"), c.String("http-dsn"))
 }
 
 func startWebServer(c *cli.Context) {
+	loadConfig(c.String("config"))
 	web.Start(c.String("webui-dsn"))
 }
 
 func startAll(c *cli.Context) {
+	loadConfig(c.String("config"))
 	go backend.Start(c.String("tcp-dsn"), c.String("http-dsn"))
 	web.Start(c.String("webui-dsn"))
 }
 
 func createUsersIndexFunc(c *cli.Context) {
+	cfg := loadConfig(c.String("config"))
 	log.Println("Creating users index in ElasticSearch")
 	settings := `{
 		"settings": {
@@ -117,11 +158,12 @@ func createUsersIndexFunc(c *cli.Context) {
 			}
 		}
 	}`
-	result, _ := common.SendToElastic("users", "PUT", []byte(settings))
+	result, _ := common.SendToElastic(cfg.Indexes.User, "PUT", []byte(settings))
 	log.Println(result)
 }
 
 func createIndexFunc(c *cli.Context) {
+	loadConfig(c.String("config"))
 	settings := `{
 		"settings": {
 			"index": {
@@ -136,6 +178,7 @@ func createIndexFunc(c *cli.Context) {
 }
 
 func deleteIndexFunc(c *cli.Context) {
+	loadConfig(c.String("config"))
 	if len(c.Args()) > 0 {
 		for _, name := range c.Args() {
 			result, _ := common.SendToElastic(name, "DELETE", nil)
