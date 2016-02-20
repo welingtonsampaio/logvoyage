@@ -10,6 +10,14 @@ import (
 	"github.com/firstrow/logvoyage/web"
 )
 
+var ConfigFile = cli.Command{
+	Name:		 "configuration",
+	Usage:		 "Print in the terminal, the configuration yaml struct.",
+	Description: "",
+	Action:		 configFileFunc,
+	Flags:		 []cli.Flag{},
+}
+
 var CreateUsersIndex = cli.Command{
 	Name:        "create_users_index",
 	Usage:       "Will create `user` index in ES",
@@ -118,6 +126,10 @@ func loadConfig(s string) *config.Config {
 		config.ReadConf()
 	}
 	return &config.Cfg
+}
+
+func configFileFunc(c *cli.Context) {
+	config.CreateConfFile()
 }
 
 func startBackendServer(c *cli.Context) {
